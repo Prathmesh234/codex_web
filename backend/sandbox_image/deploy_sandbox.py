@@ -12,7 +12,7 @@ SCRIPT_DIR = Path(__file__).parent
 # Load environment variables from .env file in the same directory
 load_dotenv(SCRIPT_DIR / ".env")
 
-TEMPLATE_FILE = SCRIPT_DIR / "sandbox_template.json"
+TEMPLATE_FILE = SCRIPT_DIR / "sandbox_template.bicep"
 RESOURCE_GROUP = "codex_rg"
 LOCATION = "eastus"
 REGISTRY_NAME = "registrycodex64425830"
@@ -110,7 +110,7 @@ def deploy_sandbox(
     mount_path: str = MOUNT_PATH,
     storage_account_name: str = STORAGE_ACCOUNT_NAME
 ) -> dict:
-    """Deploy the sandbox ARM template and return connection info.
+    """Deploy the sandbox Bicep template and return connection info.
     
     Args:
         resource_group: Azure resource group name
@@ -139,7 +139,7 @@ def deploy_sandbox(
         # Get GitHub token
         github_token = get_github_token()
         
-        print("\n📦 Deploying ARM template...")
+        print("\n📦 Deploying Bicep template...")
         start_time = time.time()
         
         # Build parameters list
@@ -183,7 +183,7 @@ def deploy_sandbox(
                 "id": deployment_name
             }
             
-        print("✅ ARM template deployment initiated")
+        print("✅ Bicep template deployment initiated")
         print("⏳ Waiting for container to be ready...")
         
         # Wait for container to be ready (max 5 minutes)
