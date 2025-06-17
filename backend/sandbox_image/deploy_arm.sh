@@ -4,7 +4,7 @@ set -e
 # ─── Validate required env vars ────────────────────────────────────────────────
 if [ -z "$GITHUB_TOKEN" ]; then
   echo "Error: \$GITHUB_TOKEN is not set"
-  exit 1
+    exit 1
 fi
 
 # ─── User & ACR configuration ─────────────────────────────────────────────────
@@ -29,8 +29,8 @@ echo "=== Deploying container group 'sandbox-container' ==="
 az deployment group create \
   --resource-group $RESOURCE_GROUP \
   --name "deploy-sandbox" \
-  --template-file sandbox_template.json \
-  --parameters \
+    --template-file sandbox_template.json \
+    --parameters \
     registryName=$REGISTRY_NAME \
     containerImage=${REGISTRY_NAME}.azurecr.io/${IMAGE_NAME} \
     containerRegistryServer=${REGISTRY_NAME}.azurecr.io \
