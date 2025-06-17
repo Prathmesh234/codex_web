@@ -13,6 +13,7 @@ A web application that combines a chat interface with browser automation capabil
 ├── backend/           # FastAPI backend server
 │   ├── app/          # Application code
 │   └── tests/        # Test files
+├── mobile/            # React Native mobile app (Expo)
 └── README.md         # This file
 ```
 
@@ -72,6 +73,13 @@ cd frontend
 npm run dev
 ```
 
+7. Start the mobile app (Expo):
+```bash
+cd mobile
+npm install
+npm start
+```
+
 The application will be available at `http://localhost:3000`
 
 ## Environment Variables
@@ -86,6 +94,11 @@ E2B_API_KEY=your_e2b_api_key
 ### Frontend (.env.local)
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### Mobile (.env)
+```
+EXPO_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ## Features
