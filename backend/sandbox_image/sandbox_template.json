@@ -7,6 +7,16 @@
       "defaultValue": "[resourceGroup().location]",
       "metadata": { "description": "Location for all resources." }
     },
+    "containerName": {
+      "type": "string",
+      "defaultValue": "sandbox-container",
+      "metadata": { "description": "Name of the container instance." }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "[toLower(concat('sa', uniqueString(resourceGroup().id)))]",
+      "metadata": { "description": "Name of the storage account to create." }
+    },
     "registryName": {
       "type": "string",
       "metadata": { "description": "Name of the Azure Container Registry." }
@@ -32,13 +42,17 @@
       "defaultValue": "projects",
       "metadata": { "description": "Azure File share name for mounting code." }
     },
+    "mountPath": {
+      "type": "string",
+      "defaultValue": "/projects",
+      "metadata": { "description": "Path where the storage will be mounted in the container." }
+    },
     "githubToken": {
       "type": "securestring",
       "metadata": { "description": "GitHub token for authentication." }
     }
   },
   "variables": {
-    "storageAccountName": "[toLower(concat('sa', uniqueString(resourceGroup().id)))]",
     "queueServiceName": "default",
     "commandQueue": "commandqueue",
     "responseQueue": "responsequeue"
@@ -47,7 +61,7 @@
       {
         "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2021-08-01",
-      "name": "[variables('storageAccountName')]",
+      "name": "[parameters('storageAccountName')]",
         "location": "[parameters('location')]",
         "kind": "StorageV2",
         "sku": { "name": "Standard_LRS" },
@@ -56,36 +70,36 @@
           {
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
       "apiVersion": "2021-08-01",
-      "name": "[format('{0}/default/{1}', variables('storageAccountName'), parameters('fileShareName'))]",
+      "name": "[format('{0}/default/{1}', parameters('storageAccountName'), parameters('fileShareName'))]",
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
       ]
     },
     {
       "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
       "apiVersion": "2021-08-01",
-      "name": "[format('{0}/{1}/{2}', variables('storageAccountName'), variables('queueServiceName'), variables('commandQueue'))]",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), variables('queueServiceName'), variables('commandQueue'))]",
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
       ]
     },
     {
       "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
       "apiVersion": "2021-08-01",
-      "name": "[format('{0}/{1}/{2}', variables('storageAccountName'), variables('queueServiceName'), variables('responseQueue'))]",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccountName'), variables('queueServiceName'), variables('responseQueue'))]",
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
       ]
     },
       {
         "type": "Microsoft.ContainerInstance/containerGroups",
       "apiVersion": "2021-09-01",
-      "name": "sandbox-container",
+      "name": "[parameters('containerName')]",
         "location": "[parameters('location')]",
         "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts/fileServices/shares', variables('storageAccountName'), 'default', parameters('fileShareName'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts/queueServices/queues', variables('storageAccountName'), variables('queueServiceName'), variables('commandQueue'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts/queueServices/queues', variables('storageAccountName'), variables('queueServiceName'), variables('responseQueue'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts/fileServices/shares', parameters('storageAccountName'), 'default', parameters('fileShareName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts/queueServices/queues', parameters('storageAccountName'), variables('queueServiceName'), variables('commandQueue'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts/queueServices/queues', parameters('storageAccountName'), variables('queueServiceName'), variables('responseQueue'))]"
         ],
         "properties": {
           "osType": "Linux",
@@ -100,18 +114,18 @@
         ],
           "containers": [
             {
-            "name": "sandbox",
+            "name": "[parameters('containerName')]",
               "properties": {
               "image": "[parameters('containerImage')]",
               "resources": { "requests": { "cpu": 1, "memoryInGB": 1.5 } },
               "ports": [{ "port": 3000 }],
               "volumeMounts": [
-                { "name": "projects-volume", "mountPath": "/projects", "readOnly": false }
+                { "name": "projects-volume", "mountPath": "[parameters('mountPath')]", "readOnly": false }
               ],
                 "environmentVariables": [
                   {
                     "name": "AZURE_STORAGE_CONNECTION_STRING",
-                  "secureValue": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2021-08-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
+                  "secureValue": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-08-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
                   },
                 { "name": "COMMAND_QUEUE", "value": "[variables('commandQueue')]" },
                 { "name": "RESPONSE_QUEUE", "value": "[variables('responseQueue')]" },
@@ -128,8 +142,8 @@
             "name": "projects-volume",
               "azureFile": {
               "shareName": "[parameters('fileShareName')]",
-              "storageAccountName": "[variables('storageAccountName')]",
-              "storageAccountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2021-08-01').keys[0].value]"
+              "storageAccountName": "[parameters('storageAccountName')]",
+              "storageAccountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-08-01').keys[0].value]"
               }
             }
           ]
@@ -139,15 +153,15 @@
     "outputs": {
     "containerIPv4Address": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', 'sandbox-container')).ipAddress.ip]"
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerName'))).ipAddress.ip]"
     },
     "storageAccountName": {
         "type": "string",
-      "value": "[variables('storageAccountName')]"
+      "value": "[parameters('storageAccountName')]"
       },
       "storageConnectionString": {
         "type": "string",
-      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2021-08-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
+      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-08-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
     },
     "commandQueueName": {
       "type": "string",
